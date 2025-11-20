@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Journal | Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1f2933, #050816);
+      color: #e5e7eb;
+      padding: 1.5rem;
+    }
+
+    .app {
+      background: rgba(15, 23, 42, 0.97);
+      border-radius: 24px;
+      max-width: 1200px;
+      width: 100%;
+      padding: 1.8rem 2rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      display: grid;
+      grid-template-columns: 2fr 1.4fr;
+      gap: 1.75rem;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+        padding: 1.4rem;
+        max-height: none;
+      }
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      letter-spacing: 0.03em;
+    }
+
+    .subtitle {
+      margin-top: 0.35rem;
+      font-size: 0.9rem;
+      color: #9ca3af;
+    }
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .calendar-card, .details-card, .chart-card {
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.1), rgba(15, 23, 42, 0.95));
+      border-radius: 18px;
+      padding: 1rem 1.1rem 1.1rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+    }
+
+    .details-card {
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .calendar-header span {
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      color: #cbd5f5;
+    }
+
+    .month-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .icon-button {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: #e5e7eb;
+      padding: 0.2rem 0.7rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.08s ease, border-color 0.15s ease;
+    }
+
+    .icon-button:hover {
+      background: rgba(30, 64, 175, 0.9);
+      border-color: rgba(191, 219, 254, 0.8);
+      transform: translateY(-1px);
+    }
+
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+      margin-bottom: 0.4rem;
+    }
+
+    .weekdays div {
+      text-align: center;
+      padding: 0.3rem 0;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.35rem;
+    }
+
+    .day {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      overflow: hidden;
+      border: 1px solid rgba(30, 41, 59, 0.8);
+      background: rgba(15, 23, 42, 0.7);
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 0.25rem 0.3rem;
+      transition: transform 0.07s ease, box-shadow 0.15s ease, border-color 0.12s ease, background 0.12s ease;
+    }
+
+    .day.empty {
+      cursor: default;
+      background: transparent;
+      border: none;
+    }
+
+    .day:not(.empty):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.9);
+      border-color: rgba(191, 219, 254, 0.8);
+    }
+
+    .day-number {
+      position: relative;
+      z-index: 2;
+    }
+
+    .day-bg {
+      position: absolute;
+      inset: 0;
+      opacity: 0.9;
+      z-index: 1;
+    }
+
+    .day.today {
+      border: 1.5px solid rgba(248, 250, 252, 0.9);
+      box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.15);
+    }
+
+    .day.has-note::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 4px;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(248, 250, 252, 0.95);
+      opacity: 0.8;
+    }
+
+    .legend {
+      margin-top: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.7rem;
+      color: #9ca3af;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .legend-bar {
+      flex: 1.4;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg,
+        hsl(0, 85%, 45%),
+        hsl(45, 85%, 50%),
+        hsl(120, 70%, 45%)
+      );
+      border: 1px solid rgba(148, 163, 184, 0.7);
+    }
+
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 0.7rem;
+      margin-top: 0.2rem;
+    }
+
+    .chart-card {
+      margin-top: 1rem;
+    }
+
+    .chart-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #cbd5f5;
+      margin-bottom: 0.2rem;
+    }
+
+    .chart-subtitle {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-bottom: 0.7rem;
+    }
+
+    canvas {
+      width: 100% !important;
+      max-height: 220px;
+    }
+
+    .details-header {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #cbd5f5;
+      margin-bottom: 0.5rem;
+    }
+
+    .selected-date {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin-bottom: 0.6rem;
+    }
+
+    .mood-row,
+    .prod-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.35rem;
+      gap: 0.6rem;
+    }
+
+    .mood-row span,
+    .prod-row span {
+      font-size: 0.85rem;
+      color: #e5e7eb;
+    }
+
+    .score-display {
+      font-size: 0.8rem;
+      color: #cbd5f5;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.9);
+      min-width: 2.1rem;
+      text-align: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #22c55e;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: #cbd5f5;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.95);
+      padding: 0.6rem 0.7rem;
+      resize: vertical;
+      color: #e5e7eb;
+      font-size: 0.85rem;
+    }
+
+    textarea::placeholder {
+      color: #6b7280;
+    }
+
+    .button-row {
+      margin-top: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .primary-button, .secondary-button {
+      flex: 1;
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .primary-button {
+      background: linear-gradient(135deg, #22c55e, #4ade80);
+      color: #052e16;
+      font-weight: 600;
+      box-shadow: 0 12px 30px rgba(34, 197, 94, 0.35);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(34, 197, 94, 0.45);
+    }
+
+    .secondary-button {
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      border-color: rgba(148, 163, 184, 0.7);
+    }
+
+    .secondary-button:hover {
+      background: rgba(30, 64, 175, 0.9);
+      border-color: rgba(191, 219, 254, 0.9);
+    }
+
+    .hint {
+      margin-top: 0.6rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      line-height: 1.4;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      font-size: 0.7rem;
+      margin-top: 0.2rem;
+    }
+
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    .section-title {
+      margin-top: 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin: 0.4rem 0 0.6rem;
+    }
+
+    .tag-pill {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+    }
+
+    .tag-pill.selected {
+      background: rgba(34, 197, 94, 0.18);
+      border-color: rgba(34, 197, 94, 0.85);
+      transform: translateY(-1px);
+    }
+
+    .tag-pill span {
+      opacity: 0.95;
+    }
+
+    .other-tag-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.6rem;
+      margin-top: 0.1rem;
+    }
+
+    .other-tag-input {
+      flex: 1;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.95);
+      padding: 0.4rem 0.7rem;
+      color: #e5e7eb;
+      font-size: 0.8rem;
+    }
+
+    .other-tag-input::placeholder {
+      color: #6b7280;
+    }
+
+    .small-button {
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.95);
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+    }
+
+    .small-button:hover {
+      background: rgba(30, 64, 175, 0.9);
+      border-color: rgba(191, 219, 254, 0.9);
+      transform: translateY(-1px);
+    }
+
+    .subtext {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-bottom: 0.3rem;
+    }
+  </style>
+  <!-- Chart.js for the pattern graph -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: calendar + chart -->
+    <div>
+      <div class="header">
+        <h1>Mood & Journal Tracker</h1>
+        <div class="subtitle">
+          Tap a day, rate your mood & productivity, log what you did and what was on your mind.
+          Watch patterns emerge over time.
+        </div>
+      </div>
+
+      <div class="calendar-card">
+        <div class="calendar-header">
+          <span id="monthLabel"></span>
+          <div class="month-controls">
+            <button class="icon-button" id="prevMonth">&lt;</button>
+            <button class="icon-button" id="todayBtn">Today</button>
+            <button class="icon-button" id="nextMonth">&gt;</button>
+          </div>
+        </div>
+        <div class="weekdays">
+          <div>Sun</div>
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+
+        <div class="legend">
+          <div style="flex: 1.4;">
+            <div>Color scale (mood + productivity)</div>
+            <div class="legend-bar"></div>
+            <div class="legend-labels">
+              <span>Low / unproductive</span>
+              <span>Mixed</span>
+              <span>High mood & output</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Pattern tracker</div>
+        <div class="chart-subtitle">Last 30 days of mood and productivity.</div>
+        <canvas id="moodProdChart"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT: day details -->
+    <div>
+      <div class="details-card">
+        <div class="details-header">Daily Check-In</div>
+        <div class="selected-date" id="selectedDateLabel"></div>
+
+        <!-- Mood -->
+        <div class="mood-row">
+          <span>Mood score (1–10)</span>
+          <div class="score-display" id="moodScoreDisplay">—</div>
+        </div>
+        <input type="range" id="moodSlider" min="1" max="10" value="5" />
+
+        <!-- Productivity -->
+        <div class="prod-row" style="margin-top:0.7rem;">
+          <span>Productivity (1–10)</span>
+          <div class="score-display" id="prodScoreDisplay">—</div>
+        </div>
+        <input type="range" id="prodSlider" min="1" max="10" value="5" />
+
+        <!-- Thoughts & tags -->
+        <div class="section-title">What was on your mind?</div>
+        <div class="subtext">
+          Tap all that apply: ex/relationships, school, gym, skiing, swimming, money, future, etc.
+        </div>
+        <div class="tag-list" id="tagList"></div>
+
+        <div class="other-tag-row">
+          <input
+            type="text"
+            id="otherTagInput"
+            class="other-tag-input"
+            placeholder="Add another thought (e.g. midterms, Clash Royale, dorm drama)"
+          />
+          <button class="small-button" id="addTagBtn">Add</button>
+        </div>
+
+        <div style="margin-top: 0.25rem;">
+          <label for="thoughtNotes">Notes about thoughts / feelings</label>
+          <textarea
+            id="thoughtNotes"
+            placeholder="What were you thinking about today? Any intrusive thoughts, obsessions, worries, or good moments?"
+          ></textarea>
+        </div>
+
+        <!-- Day details -->
+        <div class="section-title">What did you actually do?</div>
+
+        <div style="margin-top: 0.25rem;">
+          <label for="didToday">What did you do today?</label>
+          <textarea
+            id="didToday"
+            placeholder="Classes, gym, swimming, skiing, gaming, walks, studying, hanging out with people, etc."
+          ></textarea>
+        </div>
+
+        <div style="margin-top: 0.5rem;">
+          <label for="ateToday">What did you eat today?</label>
+          <textarea
+            id="ateToday"
+            placeholder="Rough idea is enough: meals, snacks, binges, skipped meals, caffeine, etc."
+          ></textarea>
+        </div>
+
+        <!-- General notes -->
+        <div class="section-title">General notes</div>
+        <div style="margin-top: 0.25rem;">
+          <label for="generalNotes">Anything else?</label>
+          <textarea
+            id="generalNotes"
+            placeholder="Extra context, goals for tomorrow, things you noticed about your patterns."
+          ></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="button-row">
+          <button class="primary-button" id="saveBtn">Save day</button>
+          <button class="secondary-button" id="clearDayBtn">Clear this day</button>
+        </div>
+
+        <div class="hint">
+          Data is stored in your browser using
+          <span class="pill"><span class="pill-dot"></span>localStorage only</span>.
+          <br />If you clear site data or switch devices/browsers, it won’t carry over.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Storage keys ---
+    const STORAGE_KEY = "moodTrackerData_v2";
+    const TAGS_KEY = "moodTrackerCustomTags_v1";
+
+    // --- Default base tags (from your life) ---
+    const baseTags = [
+      "Ex / relationships",
+      "School / studying",
+      "Gym / lifting",
+      "Swimming",
+      "Skiing / travel",
+      "Future / career",
+      "Money / finance",
+      "Friends / social",
+      "Family",
+      "Health / body image",
+      "Gaming / Clash Royale",
+      "Loneliness / isolation",
+      "Sleep",
+      "Motivation / discipline",
+      "Anxiety / overthinking"
+    ];
+
+    let customTags = [];
+    let selectedTags = [];
+    let chartInstance = null;
+
+    function loadCustomTags() {
+      try {
+        const raw = localStorage.getItem(TAGS_KEY);
+        customTags = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        customTags = [];
+      }
+    }
+
+    function saveCustomTags() {
+      localStorage.setItem(TAGS_KEY, JSON.stringify(customTags));
+    }
+
+    // --- Data handling ---
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        console.error("Error reading storage", e);
+        return {};
+      }
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // --- Date helpers ---
+    const today = new Date();
+    let currentYear = today.getFullYear();
+    let currentMonth = today.getMonth();
+    let selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    let data = loadData();
+
+    const monthLabel = document.getElementById("monthLabel");
+    const calendarGrid = document.getElementById("calendarGrid");
+    const selectedDateLabel = document.getElementById("selectedDateLabel");
+    const moodSlider = document.getElementById("moodSlider");
+    const moodScoreDisplay = document.getElementById("moodScoreDisplay");
+    const prodSlider = document.getElementById("prodSlider");
+    const prodScoreDisplay = document.getElementById("prodScoreDisplay");
+    const thoughtNotes = document.getElementById("thoughtNotes");
+    const didToday = document.getElementById("didToday");
+    const ateToday = document.getElementById("ateToday");
+    const generalNotes = document.getElementById("generalNotes");
+    const tagListEl = document.getElementById("tagList");
+    const otherTagInput = document.getElementById("otherTagInput");
+
+    function formatDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function parseDateKey(key) {
+      const [y, m, d] = key.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function formatPrettyDate(date) {
+      const options = { weekday: "short", year: "numeric", month: "short", day: "numeric" };
+      return date.toLocaleDateString(undefined, options);
+    }
+
+    function isSameDay(a, b) {
+      return a.getFullYear() === b.getFullYear() &&
+             a.getMonth() === b.getMonth() &&
+             a.getDate() === b.getDate();
+    }
+
+    // --- map mood + productivity -> color ---
+    function moodToColor(mood, productivity) {
+      const hasMood = typeof mood === "number";
+      const hasProd = typeof productivity === "number";
+
+      if (!hasMood && !hasProd) {
+        return "rgba(15,23,42,0.9)";
+      }
+
+      // Normalize 1–10 to 0–1
+      const m = hasMood ? Math.min(Math.max((mood - 1) / 9, 0), 1) : 0.5;
+      const p = hasProd ? Math.min(Math.max((productivity - 1) / 9, 0), 1) : m;
+
+      // Hue follows mood: 0 = red, 120 = green
+      const hue = 0 + 120 * m;
+
+      // Penalty: the weakest link (1 in either) pulls saturation down
+      const penalty = Math.min(m, p); // low if either is low
+
+      // Saturation: more intense if BOTH are high
+      const saturation = 35 + 55 * penalty; // 35–90%
+
+      // Lightness: darker when both are high, lighter when they're mixed or low
+      const avg = (m + p) / 2;
+      const lightness = 65 - 30 * avg; // 65–35%
+
+      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    }
+
+    // --- Tags rendering ---
+    function renderTags() {
+      tagListEl.innerHTML = "";
+      const tags = [...baseTags, ...customTags];
+
+      tags.forEach(tag => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tag-pill";
+        if (selectedTags.includes(tag)) {
+          btn.classList.add("selected");
+        }
+        btn.innerHTML = `<span>${tag}</span>`;
+        btn.addEventListener("click", () => toggleTag(tag));
+        tagListEl.appendChild(btn);
+      });
+    }
+
+    function toggleTag(tag) {
+      if (selectedTags.includes(tag)) {
+        selectedTags = selectedTags.filter(t => t !== tag);
+      } else {
+        selectedTags.push(tag);
+      }
+      renderTags();
+    }
+
+    // --- Calendar rendering ---
+    function renderCalendar() {
+      calendarGrid.innerHTML = "";
+
+      const firstOfMonth = new Date(currentYear, currentMonth, 1);
+      const firstWeekday = firstOfMonth.getDay(); // 0=Sun
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+      const monthName = firstOfMonth.toLocaleString(undefined, { month: "long", year: "numeric" });
+      monthLabel.textContent = monthName;
+
+      // Leading empty cells
+      for (let i = 0; i < firstWeekday; i++) {
+        const empty = document.createElement("div");
+        empty.className = "day empty";
+        calendarGrid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateObj = new Date(currentYear, currentMonth, day);
+        const key = formatDateKey(dateObj);
+        const entry = data[key];
+
+        const dayEl = document.createElement("div");
+        dayEl.className = "day";
+
+        if (isSameDay(dateObj, today)) {
+          dayEl.classList.add("today");
+        }
+        if (entry && entry.thoughtNotes && entry.thoughtNotes.trim() !== "") {
+          dayEl.classList.add("has-note");
+        }
+
+        const bg = document.createElement("div");
+        bg.className = "day-bg";
+        const moodVal = entry ? entry.mood : undefined;
+        const prodVal = entry ? entry.productivity : undefined;
+        bg.style.background = entry
+          ? moodToColor(moodVal, prodVal)
+          : "rgba(15,23,42,0.9)";
+
+        const number = document.createElement("div");
+        number.className = "day-number";
+        number.textContent = day;
+
+        dayEl.appendChild(bg);
+        dayEl.appendChild(number);
+
+        dayEl.addEventListener("click", () => {
+          selectedDate = new Date(currentYear, currentMonth, day);
+          loadSelectedDay();
+        });
+
+        calendarGrid.appendChild(dayEl);
+      }
+
+      updateChart();
+    }
+
+    // --- Selected day panel ---
+    function loadSelectedDay() {
+      const key = formatDateKey(selectedDate);
+      const entry = data[key] || {};
+
+      selectedDateLabel.textContent = formatPrettyDate(selectedDate);
+
+      const mood = typeof entry.mood === "number" ? entry.mood : 5;
+      const prod = typeof entry.productivity === "number" ? entry.productivity : 5;
+
+      moodSlider.value = mood;
+      prodSlider.value = prod;
+      moodScoreDisplay.textContent = typeof entry.mood === "number" ? entry.mood : "5";
+      prodScoreDisplay.textContent = typeof entry.productivity === "number" ? entry.productivity : "5";
+
+      thoughtNotes.value = entry.thoughtNotes || entry.notes || "";
+      didToday.value = entry.didToday || "";
+      ateToday.value = entry.ateToday || "";
+      generalNotes.value = entry.generalNotes || "";
+
+      selectedTags = entry.tags || [];
+      renderTags();
+    }
+
+    // --- Chart (pattern tracker) ---
+    function updateChart() {
+      const ctx = document.getElementById("moodProdChart").getContext("2d");
+
+      const entries = Object.entries(data)
+        .map(([key, value]) => ({ dateKey: key, date: parseDateKey(key), value }))
+        .sort((a, b) => a.date - b.date);
+
+      if (entries.length === 0) {
+        if (chartInstance) {
+          chartInstance.destroy();
+          chartInstance = null;
+        }
+        return;
+      }
+
+      const last30Cutoff = new Date();
+      last30Cutoff.setDate(last30Cutoff.getDate() - 29); // include today + 29 days back
+
+      const recentEntries = entries.filter(e => e.date >= last30Cutoff);
+
+      const labels = recentEntries.map(e =>
+        e.date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+      );
+      const moodData = recentEntries.map(e =>
+        typeof e.value.mood === "number" ? e.value.mood : null
+      );
+      const prodData = recentEntries.map(e =>
+        typeof e.value.productivity === "number" ? e.value.productivity : null
+      );
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Mood",
+              data: moodData,
+              borderWidth: 2,
+              pointRadius: 3,
+              tension: 0.3
+            },
+            {
+              label: "Productivity",
+              data: prodData,
+              borderWidth: 2,
+              pointRadius: 3,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              min: 1,
+              max: 10,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                font: { size: 10 }
+              }
+            }
+          },
+          elements: {
+            line: {
+              // colors handled by Chart.js defaults
+            }
+          }
+        }
+      });
+    }
+
+    // --- Event listeners ---
+    document.getElementById("prevMonth").addEventListener("click", () => {
+      if (currentMonth === 0) {
+        currentMonth = 11;
+        currentYear--;
+      } else {
+        currentMonth--;
+      }
+      renderCalendar();
+    });
+
+    document.getElementById("nextMonth").addEventListener("click", () => {
+      if (currentMonth === 11) {
+        currentMonth = 0;
+        currentYear++;
+      } else {
+        currentMonth++;
+      }
+      renderCalendar();
+    });
+
+    document.getElementById("todayBtn").addEventListener("click", () => {
+      currentYear = today.getFullYear();
+      currentMonth = today.getMonth();
+      selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      renderCalendar();
+      loadSelectedDay();
+    });
+
+    moodSlider.addEventListener("input", () => {
+      moodScoreDisplay.textContent = moodSlider.value;
+    });
+
+    prodSlider.addEventListener("input", () => {
+      prodScoreDisplay.textContent = prodSlider.value;
+    });
+
+    document.getElementById("addTagBtn").addEventListener("click", () => {
+      const value = otherTagInput.value.trim();
+      if (!value) return;
+      if (!customTags.includes(value) && !baseTags.includes(value)) {
+        customTags.push(value);
+        saveCustomTags();
+      }
+      if (!selectedTags.includes(value)) {
+        selectedTags.push(value);
+      }
+      otherTagInput.value = "";
+      renderTags();
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const key = formatDateKey(selectedDate);
+      const entry = {
+        mood: parseInt(moodSlider.value, 10),
+        productivity: parseInt(prodSlider.value, 10),
+        thoughtNotes: thoughtNotes.value || "",
+        didToday: didToday.value || "",
+        ateToday: ateToday.value || "",
+        generalNotes: generalNotes.value || "",
+        tags: selectedTags.slice()
+      };
+
+      data[key] = entry;
+      saveData(data);
+      renderCalendar();
+      loadSelectedDay();
+    });
+
+    document.getElementById("clearDayBtn").addEventListener("click", () => {
+      const key = formatDateKey(selectedDate);
+      if (data[key]) {
+        delete data[key];
+        saveData(data);
+        renderCalendar();
+        loadSelectedDay();
+      }
+    });
+
+    // --- Initial load ---
+    loadCustomTags();
+    renderCalendar();
+    loadSelectedDay();
+  </script>
+</body>
+</html>
