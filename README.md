@@ -1,2 +1,2 @@
 # journaling
-journaling to track mood/patterns. project for my therapy for dysthymia or cyclothymia 🙂
+journal ur thoughts & feelings twin
