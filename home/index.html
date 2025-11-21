@@ -68,9 +68,10 @@
       border: 1px solid rgba(148, 163, 184, 0.5);
     }
 
+    /* RIGHT PANEL: remove internal scroll, let page scroll instead */
     .details-card {
-      max-height: 70vh;
-      overflow-y: auto;
+      /* max-height: 70vh; */
+      /* overflow-y: auto; */
     }
 
     .calendar-header {
@@ -160,6 +161,15 @@
       border-color: rgba(191, 219, 254, 0.8);
     }
 
+    /* Make the actively edited day SUPER obvious */
+    .day.selected {
+      border-color: rgba(248, 250, 252, 1);
+      box-shadow:
+        0 0 0 2px rgba(248, 250, 252, 0.9),
+        0 0 25px rgba(248, 250, 252, 0.3);
+      transform: translateY(-1px);
+    }
+
     .day-number {
       position: relative;
       z-index: 2;
@@ -201,14 +211,20 @@
       flex-wrap: wrap;
     }
 
+    /* Legend bar matches your new hex gradient 1–20 */
     .legend-bar {
       flex: 1.4;
       height: 10px;
       border-radius: 999px;
-      background: linear-gradient(90deg,
-        hsl(0, 85%, 45%),
-        hsl(45, 85%, 50%),
-        hsl(120, 70%, 45%)
+      background: linear-gradient(
+        90deg,
+        #c7170e 0%,
+        #db3232 10%,
+        #e88615 25%,
+        #f5e640 50%,
+        #71cc5a 75%,
+        #3a8f25 95%,
+        #2d751b 100%
       );
       border: 1px solid rgba(148, 163, 184, 0.7);
     }
@@ -501,12 +517,12 @@
 
         <div class="legend">
           <div style="flex: 1.4;">
-            <div>Color scale (mood + productivity)</div>
+            <div>Color scale (mood + productivity, 1–20)</div>
             <div class="legend-bar"></div>
             <div class="legend-labels">
-              <span>Low / unproductive</span>
+              <span>Really bad</span>
               <span>Mixed</span>
-              <span>High mood & output</span>
+              <span>Really good</span>
             </div>
           </div>
         </div>
@@ -539,7 +555,6 @@
         </div>
         <input type="range" id="prodSlider" min="1" max="10" value="5" />
 
-        <!-- Thoughts & tags -->
         <div class="section-title">What was on your mind?</div>
         <div class="subtext">
           Tap all that apply: ex/relationships, school, gym, skiing, swimming, money, future, etc.
@@ -708,7 +723,78 @@
              a.getDate() === b.getDate();
     }
 
-    // --- map mood + productivity -> color ---
+    // --- Color stops for total score 1–20 ---
+    const scoreStops = [
+      { score: 1, color: "#c7170e" },
+      { score: 2, color: "#db3232" },
+      { score: 5, color: "#e88615" },
+      { score: 10, color: "#f5e640" },
+      { score: 15, color: "#71cc5a" },
+      { score: 19, color: "#3a8f25" },
+      { score: 20, color: "#2d751b" }
+    ];
+
+    function hexToRgb(hex) {
+      const clean = hex.replace("#", "");
+      const num = parseInt(clean, 16);
+      return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255
+      };
+    }
+
+    function rgbToHex(r, g, b) {
+      return (
+        "#" +
+        [r, g, b]
+          .map(v => {
+            const s = v.toString(16);
+            return s.length === 1 ? "0" + s : s;
+          })
+          .join("")
+      );
+    }
+
+    // totalScore (1–20) -> interpolated hex color
+    function scoreToColor(score) {
+      if (!Number.isFinite(score)) {
+        return "rgba(15,23,42,0.9)";
+      }
+
+      const clamped = Math.min(Math.max(score, 1), 20);
+
+      // Exact match to a stop
+      for (const stop of scoreStops) {
+        if (stop.score === clamped) {
+          return stop.color;
+        }
+      }
+
+      // Find the two stops around this score
+      let lower = scoreStops[0];
+      let upper = scoreStops[scoreStops.length - 1];
+
+      for (let i = 1; i < scoreStops.length; i++) {
+        if (clamped < scoreStops[i].score) {
+          lower = scoreStops[i - 1];
+          upper = scoreStops[i];
+          break;
+        }
+      }
+
+      const t = (clamped - lower.score) / (upper.score - lower.score);
+      const lr = hexToRgb(lower.color);
+      const ur = hexToRgb(upper.color);
+
+      const r = Math.round(lr.r + (ur.r - lr.r) * t);
+      const g = Math.round(lr.g + (ur.g - lr.g) * t);
+      const b = Math.round(lr.b + (ur.b - lr.b) * t);
+
+      return rgbToHex(r, g, b);
+    }
+
+    // --- map mood + productivity -> color using your 1–20 gradient ---
     function moodToColor(mood, productivity) {
       const hasMood = typeof mood === "number";
       const hasProd = typeof productivity === "number";
@@ -717,24 +803,11 @@
         return "rgba(15,23,42,0.9)";
       }
 
-      // Normalize 1–10 to 0–1
-      const m = hasMood ? Math.min(Math.max((mood - 1) / 9, 0), 1) : 0.5;
-      const p = hasProd ? Math.min(Math.max((productivity - 1) / 9, 0), 1) : m;
+      const m = hasMood ? mood : 0;
+      const p = hasProd ? productivity : 0;
+      const total = m + p; // 2–20 normally
 
-      // Hue follows mood: 0 = red, 120 = green
-      const hue = 0 + 120 * m;
-
-      // Penalty: the weakest link (1 in either) pulls saturation down
-      const penalty = Math.min(m, p); // low if either is low
-
-      // Saturation: more intense if BOTH are high
-      const saturation = 35 + 55 * penalty; // 35–90%
-
-      // Lightness: darker when both are high, lighter when they're mixed or low
-      const avg = (m + p) / 2;
-      const lightness = 65 - 30 * avg; // 65–35%
-
-      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      return scoreToColor(total);
     }
 
     // --- Tags rendering ---
@@ -793,6 +866,9 @@
         if (isSameDay(dateObj, today)) {
           dayEl.classList.add("today");
         }
+        if (isSameDay(dateObj, selectedDate)) {
+          dayEl.classList.add("selected");
+        }
         if (entry && entry.thoughtNotes && entry.thoughtNotes.trim() !== "") {
           dayEl.classList.add("has-note");
         }
@@ -815,6 +891,7 @@
         dayEl.addEventListener("click", () => {
           selectedDate = new Date(currentYear, currentMonth, day);
           loadSelectedDay();
+          renderCalendar(); // re-render so selected highlight moves
         });
 
         calendarGrid.appendChild(dayEl);
@@ -828,7 +905,7 @@
       const key = formatDateKey(selectedDate);
       const entry = data[key] || {};
 
-      selectedDateLabel.textContent = formatPrettyDate(selectedDate);
+      selectedDateLabel.textContent = `Editing: ${formatPrettyDate(selectedDate)}`;
 
       const mood = typeof entry.mood === "number" ? entry.mood : 5;
       const prod = typeof entry.productivity === "number" ? entry.productivity : 5;
@@ -924,7 +1001,7 @@
           },
           elements: {
             line: {
-              // colors handled by Chart.js defaults
+              // use Chart.js defaults for colors
             }
           }
         }
